@@ -22,7 +22,7 @@
 #  This copyright notice MUST APPEAR in all copies of the script!
 #
 ################################################################
-# $Id$
+# $Id: 39_Talk2Fhem.pm 16428 2018-03-17 18:52:44Z Phill $
 #
 # 13.12.2017 0.0.2	diverses
 #
@@ -140,7 +140,7 @@ use Text::Balanced qw(extract_multiple extract_bracketed);
 my %Talk2Fhem_globals;
 
 
-$Talk2Fhem_globals{version}="0.5.3-ahlers2mi.1";
+$Talk2Fhem_globals{version}="0.5.3";
 
 $Talk2Fhem_globals{EN}{erase} = ['\bplease\b', '\balso\b', '^msgtext:'];
 $Talk2Fhem_globals{EN}{numbers} = {
@@ -232,7 +232,7 @@ $Talk2Fhem_globals{DE}{numbers} = {
 ,'fünf\S*' => 5
 ,'sechs\S*' => 6
 ,'sieb\S*' => 7
-,'acht\S*' => 8
+,' acht\S*' => 8
 ,'neun\S*' => 9
 ,'zehn\S*' => 10
 ,'elf\S*' => 11
@@ -307,7 +307,7 @@ $Talk2Fhem_globals{DE}{dtspec} = [
 	{phr=>'gleich', 			dtmod=>{min=>3}},
 	{phr=>'nachher', 			dtmod=>{min=>30}},
 	{phr=>'später', 			dtmod=>{hour=>1}},
-	{phr=>'heute', 				dtmod=>{notime=>'"12:00"',time=>'"00:00"'}},
+#	{phr=>'heute', 				dtmod=>{notime=>'"12:00"',time=>'"00:00"'}},
 	{phr=>'nachts?',			dtmod=>{notime=>'"03:00"',pm=>0}},
 	{phr=>'früh', 				dtmod=>{notime=>'"09:00"',pm=>0}},
 	{phr=>'vormittags?',		dtmod=>{notime=>'"10:30"',pm=>0}},
@@ -474,7 +474,8 @@ sub Talk2Fhem_Loadphrase($$$) {
 	# Not ready yet
 	return unless $hash->{helper};
 	
-	my $disu =AttrVal($hash, "T2F_disableumlautescaping", 0);
+        my $disu =AttrVal($hash->{NAME}, "T2F_disableumlautescaping", 0);
+        T2FL $hash->{NAME}, 4, "T2F_disableumlautescaping $disu";
 	my %keylist = %{$hash->{helper}{T2F_keywordlist}} if $hash->{helper}{T2F_keywordlist};
 
 
@@ -484,6 +485,7 @@ sub Talk2Fhem_Loadphrase($$$) {
 		my @a = $$elmnt{key}=~/(?<!\\)\(/g;
 		my @b = $$elmnt{key}=~/(?<!\\)\)/g;
 		return("Error while parsing Definition HASH.\nOdd numbers of brackets ():\n".$$elmnt{key}) unless $#a eq $#b;
+#                T2FL $hash->{NAME}, 5, "$$elmnt{key} $$elmnt{val}";
 		if ($$elmnt{key} eq '$include') {
 			T2FL $hash->{NAME}, 4, "Loading Configfile $$elmnt{val}";
 
@@ -549,10 +551,6 @@ sub Talk2Fhem_Loadphrase($$$) {
 		for my $phr (@phrs) {
 		my $keylistname;
 		my $tmp = $phr;
-		# ahlers2mi 2026-11-04: zweite Fassung der Phrase, in der Keywords nur am
-		# Wortanfang treffen. Talk2Fhem_addevt probiert diese zuerst und faellt sonst auf die
-		# alte Teilwort-Suche zurueck (zusammengesetzte Woerter wie "Nachttischlampe").
-		my $sphr = $phr;
 		# klammern zählen die nicht geslasht sind und kein spezialklammern sind (?
 		while ($tmp =~ /(?<!\\)\((?!\?)(@(\w+))?/g) {
 			$d++;
@@ -563,21 +561,14 @@ sub Talk2Fhem_Loadphrase($$$) {
 					next;
 					#return(T2FL($hash, 1, "Unkown keywordlist $1. In phrase: $phr"));
 				}
-				# ahlers2mi 2026-11-04: Reihenfolge bewusst NICHT nach Laenge sortiert - das
-				# getroffene Listenwort landet in den Filtern (T2F_types_blind=.*Rollade.*),
-				# "Rolladen" statt "Rollade" wuerde dort keine Geraete mehr finden.
-				my @kw = @{$keylist{$keylistname}};
-				my $re = join("|", @kw);
-				my $sre = join("|", map { Talk2Fhem_wordstart($_) } @kw);
+				my $re = join("|", @{$keylist{$keylistname}});
 				$phr =~ s/@(\w+)/$re/;
-				$sphr =~ s/@(\w+)/$sre/;
 				#speichern welcher array in welcher klammer steht
 				$hitnokeylist[$d] = $keylistname;
 			}
 		}
 
 		push(@{$$elmnt{regexps}}, Talk2Fhem_escapeumlauts($phr, $disu));
-		push(@{$$elmnt{regexps_strict}}, Talk2Fhem_escapeumlauts($sphr, $disu));
 		$$elmnt{hitnokeylist} = \@hitnokeylist;
 		}
 
@@ -665,7 +656,8 @@ sub Talk2Fhem_Notify($$)
 sub Talk2Fhem_Set($@)
 {
 	my ( $hash, $name, @args ) = @_;
-	(return "\"set $name\" needs at least one argument") unless(scalar(@args));
+        my $return = "";
+ 	(return "\"set $name\" needs at least one argument") unless(scalar(@args));
 	(return "Unknown argument ?, choose one of ! cleartriggers:noArg cleartimers:noArg") if($args[0] eq "?");
 	
 	if ($args[0] eq "cleartimers") {
@@ -756,10 +748,15 @@ sub Talk2Fhem_Set($@)
 		### in done könnte 
 		readingsEndUpdate($hash, 1);
 		
+                #$return = $hash->{$status};
+                $return = ReadingsVal($name, $status, undef);
+                if ($status eq "done"){
+                  $return = ["alles klar","wird gemacht","ich kümmere mich drum","ei ei sir"]->[rand(4)];
+                }
 
 	}
 	$hash->{STATE} = "Ready";
-	return;
+	return($return);
 }
 
 sub Talk2Fhem_addND($) {
@@ -1435,33 +1432,23 @@ my %modlist = %{$defs{$myname}{helper}{T2F_modwordlist}} if $defs{$myname}{helpe
 
 my @hitnokeylist = @{$$phr{hitnokeylist}};
 my @fphrs = @{$$phr{regexps}};
-my @sphrs = @{$$phr{regexps_strict} || $$phr{regexps}};
 
 my $pmatch;
 #my $punmatch = $cmd;
 
 my @dir = ($$spec{origin});
 T2FL($myname, 5, "$myname Evaluate search:\n$cmd =~ /$$phr{key}/i") if ref $res;
-for my $fi (0..$#fphrs) {
-my $fphr = $fphrs[$fi];
-my $sphr = $sphrs[$fi] // $fphr;
+for my $fphr (@fphrs) {
 #	if (my @d = ($cmd =~ qr/$fphr/i))
 	if ($fphr =~ s/^\?//){
-		$sphr =~ s/^\?//;
-		# ahlers2mi 2026-11-04: erst am Wortanfang, dann Teilwort wie bisher
-		# my @d = ($cmd =~ /$fphr/i);
-		my @d = ($cmd =~ /$sphr/i);
-		@d = ($cmd =~ /$fphr/i) unless @d;
-		# Trefferposition sichern; bei Nichttreffer ist $& noch das "?" von oben
-		my ($mpos, $mlen) = @d ? ($-[0], $+[0] - $-[0]) : (undef, 0);
+		my @d = ($cmd =~ /$fphr/i);
 		
-		# my $m = $&;
-		my $m = defined $mpos ? substr($cmd, $mpos, $mlen) : "?";
-		#Log 1, "A: ".$fphr;
-		#Log 1, "A: ".Dumper $m;
-		#Log 1, "B: ".Dumper @d;
+		my $m = $&;
+		T2FL($myname, 5, "A: ".$fphr);
+		T2FL($myname, 5, "A: ".Dumper $m);
+		T2FL($myname, 5, "B: ".Dumper @d);
 		my $b = () = $fphr =~ m/(?<!\\)\((?!\?)/g;
-		#Log 1, "C: $#d".Dumper $b;
+		T2FL($myname, 5, "C: $#d".Dumper $b);
 		# Wenn die klammer kein erfolg hat wird auch @d nicht gefüllt und muß manuell gefüllt werden
 		if ($#d == -1) {
 		for (1..$b) {
@@ -1474,24 +1461,20 @@ my $sphr = $sphrs[$fi] // $fphr;
 		next if $m eq "?";
 		$pmatch .= $m;
 #		$punmatch =~ s/$m//gi;
-		# $cmd =~ s/$m//gi;
-		$cmd = Talk2Fhem_cut($cmd, $mpos, $mlen);
+##		$cmd =~ s/$m//gi;
 	} elsif ($fphr =~ /^\!/) {
 		return if (eval { $cmd =~ /$'/i });
-	} elsif (my @r = Talk2Fhem_match2($cmd, $sphr, $fphr)) {
-		# my $m = $&;
-		my ($mpos, $mlen, @d) = @r;
-		my $m = substr($cmd, $mpos, $mlen);
+	} elsif (my @d = ($cmd =~ /$fphr/i ) ){
+		my $m = $&;
 		$pmatch .= $m;
 #		$punmatch =~ s/$m//gi;
-		# $cmd =~ s/$m//gi;
-		$cmd = Talk2Fhem_cut($cmd, $mpos, $mlen);
+		$cmd =~ s/$m//gi;
 		# Klammerinhalt speichern wenn Klammer vorhanden
 		push(@dir, @d) if $fphr =~ /(?<!\\)\((?!\?)/;
 #		push(@dir, @d) if $fphr =~ /\((?!\?)/;
 		
 	} else {
-		#T2FL($myname, 5, "$myname No hit with:\n$cmd =~ /$fphr/i");
+		T2FL($myname, 5, "$myname No hit with:\n$cmd =~ /$fphr/i");
 		return;
 	}
 	$cmd = Talk2Fhem_normalize($cmd);
@@ -1688,7 +1671,7 @@ my %react;
 								my @res = $d =~ qr/$re/i;
 								$rp = &$fc(@res);
 							} elsif ($fc) {
-								T2FL($myname,5,"Functionmod '$$fc' $rp");
+								T2FL($myname,5,"Functionmod '$fc' $rp");
 								my $ev = eval($fc);
 								$rp =~ s/$re/$ev/gi;
 							}
@@ -1702,7 +1685,8 @@ my %react;
 					# empty  undef
 					if (! defined($d) or $d =~ qr/${$Talk2Fhem{pass}}{empty}/) {
 							#$d existiert nicht
-							my $e = ($$hash{empty}{val} || $$hash{else}{val});
+#							my $e = ($$hash{empty}{val} || $$hash{else}{val});
+							my $e = $$hash{empty}{val};
 							T2FL($myname, 5, "Empty word replace with '$e'");
 							$do =~ s/###/$e/;
 					}					
@@ -1940,55 +1924,6 @@ sub Talk2Fhem_escapeumlauts($;$) {
 
 }
 
-}
-
-# ahlers2mi 2026-11-04: Keyword muss am Wortanfang stehen ("Tisch" nicht in "Nachttisch").
-# Das Wortende bleibt offen: "Rollade" soll weiter in "Rolladen" treffen.
-sub Talk2Fhem_wordstart($) {
-	my ($k) = @_;
-	return($k =~ /^[\w\x80-\xff]/ ? '(?<![\w\x80-\xff])(?:'.$k.')' : '(?:'.$k.')');
-}
-
-# ahlers2mi 2026-11-04: Keyword (Regex-Schnipsel) nur als ganzes Wort treffen.
-# Grenzen nur, wo der Eintrag mit einem Wortzeichen beginnt bzw. endet, damit
-# Eintraege wie " halt" oder "(\d+) (?:prozent|%|db)?" unveraendert wirken.
-# Bytes >= 0x80 (Umlaute in UTF-8) zaehlen als Wortzeichen.
-sub Talk2Fhem_wordbound($;$) {
-	my ($k, $raw) = @_;
-	$raw = $k unless defined $raw;
-	my $w = '\w\x80-\xff';
-	my $pre  = ($raw =~ /^[\w\x80-\xff]/) ? "(?<![$w])" : "";
-	my $post = ($raw =~ /[\w\x80-\xff]$/) ? "(?![$w])" : "";
-	return("$pre(?:$k)$post");
-}
-
-# ahlers2mi 2026-11-04: erst die Wortanfang-Fassung, dann die alte Teilwort-Fassung.
-# Rueckgabe: (Startposition, Laenge, Klammerinhalte...) oder () ohne Treffer.
-# (@- und @+ gelten nur innerhalb dieser Funktion, daher explizit zurueckgeben.)
-sub Talk2Fhem_match2($$$) {
-	my ($cmd, $sphr, $fphr) = @_;
-	for my $re ($sphr, $fphr) {
-		my @d = ($cmd =~ /$re/i);
-		return($-[0], $+[0] - $-[0], @d) if @d;
-	}
-	return();
-}
-
-# ahlers2mi 2026-11-04: Treffer aus dem Satz entfernen. Ersetzt "$cmd =~ s/$m//gi":
-# dort wurde der Treffer ungeschuetzt als Regex benutzt (Sonderzeichen!) und auch
-# mitten in anderen Woertern geloescht. Jetzt: genau diese Stelle, dazu weitere
-# Vorkommen nur als ganzes Wort (die UND-Analyse erzeugt solche Dopplungen).
-sub Talk2Fhem_cut($$$) {
-	my ($cmd, $pos, $len) = @_;
-	return($cmd) unless defined $pos;
-	my $m = substr($cmd, $pos, $len);
-	substr($cmd, $pos, $len) = "";
-	(my $t = $m) =~ s/^\s+|\s+$//g;
-	if ($t ne "") {
-		my $re = Talk2Fhem_wordbound(quotemeta($t), $t);
-		$cmd =~ s/$re//gi;
-	}
-	return($cmd);
 }
 
 sub T2FL($$$) {
