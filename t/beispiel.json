@@ -1,0 +1,7 @@
+{
+ "def": "?(bitte) && ?(@properties) && (@types_switch) && ?(@rooms) && ?(@places) && (\\S+)(schalten|machen)?$ =\n  (cmd=>'set T2F_types_switch=.*$3@.*:FILTER=T2F_rooms=.*($4@).*:FILTER=T2F_places=.*$5@.* $6{true=>on, false=>off}')\n?(bitte) && (@types_blind) && ?(@rooms) && ?(@places) && auf (\\d+)(?:[ ]){0,1}(?:prozent|%) =\n  (cmd=>'set T2F_types_blind=.*$2@.*:FILTER=T2F_rooms=.*($3@).*:FILTER=T2F_places=.*$4@.* pct $5')",
+ "attributes": {
+  "T2F_language": "DE",
+  "T2F_keywordlist": "&rooms = Wohnzimmer, Schlafzimmer, Küche, Bad\\S*, Erdgescho\\S\\S?\n&places = Nachttisch Michael, Nachttisch Maike, Nachttisch, Tür, Tisch, Esstisch, Haustür, Wand, Fenster\ntypes_switch = Stehlampe, Lampe, Licht, Steckdose, Lichterkette\ntypes_blind = Rollade, Rolllade, Rolladen, Rollladen, Helligkeit, Dimmer\nproperties = helle, dunkle"
+ }
+}

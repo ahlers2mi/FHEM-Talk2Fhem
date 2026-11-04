@@ -1,0 +1,21 @@
+# Testsaetze fuer t/vergleich.sh - eine Zeile pro Satz
+Lampe Nachttisch Maike an
+Lampe Nachttisch Michael aus
+Lampe am Nachttisch an
+Nachttischlampe Maike an
+Nachttischlampe an
+Licht am Esstisch an
+Licht am Tisch an
+Lampe an der Haustür an
+Steckdose im Schlafzimmer aus
+Licht im Erdgeschoss aus
+Lichterkette im Wohnzimmer an
+Rolladen im Wohnzimmer auf 40 Prozent
+Rollladen in der Küche auf 20 Prozent
+Helligkeit Nachttisch Maike auf 30 Prozent
+# Wort mitten in einem zusammengesetzten Wort soll keinen Ort "stehlen":
+Lampe Nachttisch am Fenster an
+Lampe Esstischkante an der Wand an
+Lampe Kaffeetisch an der Wand an
+Licht Schranktür im Schlafzimmer an
+Lampe Kaffeetisch an
