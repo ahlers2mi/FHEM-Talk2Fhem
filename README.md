@@ -4,7 +4,21 @@ Gepflegte Kopie des FHEM-Moduls **Talk2Fhem** (39_Talk2Fhem.pm, © 2018 Oliver G
 mit kleinen Korrekturen an der Wort-Erkennung.
 
 - `upstream/39_Talk2Fhem.pm` – unveränderter Stand aus dem FHEM-SVN (trunk, abgerufen 04.11.2026, Version 0.5.3)
-- `FHEM/39_Talk2Fhem.pm` – angepasste Fassung (Version `0.5.3-ahlers2mi.1`)
+- `FHEM/39_Talk2Fhem.pm` – angepasste Fassung (Version `0.5.3-ahlers2mi.1`): lokale Anpassungen + Korrekturen unten
+
+Kein Fork von `fhem/fhem-mirror`: der enthielte das komplette FHEM (~300 MB), und Änderungen an
+FHEM laufen ohnehin über SVN/Forum, nicht über GitHub-Pull-Requests.
+
+## Lokale Anpassungen (seit längerem im Einsatz)
+
+- `set <talk> …` gibt die Antwort bzw. den Status zurück (bei `done` ein zufälliges
+  „alles klar“ o. ä.) – nötig, wenn `set` aus Perl aufgerufen und die Antwort weitergereicht wird
+  (z. B. Alexa).
+- Optionale Phrasenteile `?(...)` werden nicht mehr aus dem Satz gelöscht.
+- Zahlwort `' acht\S*'` mit führendem Leerzeichen („Nacht“ ist keine 8).
+- Zeitphrase `heute` deaktiviert.
+- `{empty=>…, else=>…}`: bei leerem Treffer nur `empty`, nicht ersatzweise `else`.
+- `T2F_disableumlautescaping` wird korrekt über den Gerätenamen gelesen, Debug-Ausgaben auf Level 5.
 - `t/` – Test ohne FHEM: lädt das Modul mit Stubs und wertet Sätze aus (es wird nichts geschaltet)
 
 ## Änderungen gegenüber upstream
@@ -15,7 +29,8 @@ mit kleinen Korrekturen an der Wort-Erkennung.
    als Teilwort. Zusammengesetzte Wörter („Nachttischlampe“ → `Lampe`) funktionieren also weiter.
    Das Wortende bleibt offen, damit `Rollade` weiterhin in „Rolladen“ trifft – das getroffene
    Listenwort landet in Filtern wie `T2F_types_blind=.*Rollade.*`.
-2. **Treffer werden literal aus dem Satz entfernt.** Bisher `$cmd =~ s/$m//gi`: Der Treffer wurde als
+2. **Treffer werden literal aus dem Satz entfernt** (Pflichtteile; optionale werden gar nicht
+   entfernt, s. o.). Bisher `$cmd =~ s/$m//gi`: Der Treffer wurde als
    ungeschützter Regex benutzt und auch mitten in anderen Wörtern gelöscht. Jetzt wird genau die
    Trefferstelle entfernt, weitere Vorkommen nur als ganzes Wort (die UND-Analyse erzeugt solche
    Dopplungen, z. B. „Steckdose Steckdose im Keller“).
@@ -31,7 +46,7 @@ t/vergleich.sh meine.json saetze.txt # eigene Konfiguration: {"def": "...", "att
 
 Zeigt die Unterschiede zwischen upstream und angepasster Fassung. Mit der Konfiguration, für die das
 Repo entstanden ist, ergaben 879 Sätze (alle Schalt-, Rollo- und Info-Typen × Räume/Orte) keine
-Unterschiede.
+Unterschiede zur vorher installierten Fassung (mit lokalen Anpassungen).
 
 ## Installation in FHEM
 

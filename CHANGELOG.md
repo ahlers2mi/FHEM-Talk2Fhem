@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.5.3-ahlers2mi.1 (04.11.2026)
+- Basis: lokal angepasste 0.5.3 (Antwort aus set, optionale Teile nicht loeschen, acht, heute, empty, disu)
 - Keywords zuerst am Wortanfang suchen, Teilwort nur als Rückfall
 - Treffer literal statt als Regex aus dem Satz entfernen, Dopplungen nur als ganzes Wort
 - Test-Harness `t/` (Modul ohne FHEM laden, upstream vs. angepasst vergleichen)
