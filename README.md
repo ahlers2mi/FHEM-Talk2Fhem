@@ -35,6 +35,12 @@ FHEM laufen ohnehin über SVN/Forum, nicht über GitHub-Pull-Requests.
    Trefferstelle entfernt, weitere Vorkommen nur als ganzes Wort (die UND-Analyse erzeugt solche
    Dopplungen, z. B. „Steckdose Steckdose im Keller“).
 
+3. **Backslashes in `T2F_keywordlist`/`T2F_modwordlist` bleiben erhalten.** `quotewords()` entfernte
+   sie außerhalb von `'...'`: `Bad\S*` wurde zu `BadS*`, `Terrasse(?!\sOst)` zu `Terrasse(?!sOst)`
+   (wirkungslos). Jetzt unterscheiden „Terrasse Ost“, „Terrasse West“ und „Terrasse“ wie gedacht.
+4. **Feste Reihenfolge in der UND-Analyse.** Die Listen wurden in Hash-Reihenfolge durchlaufen, die
+   Perl bei jedem Start neu würfelt – derselbe Satz konnte nach einem Neustart anders zerlegt werden.
+
 Die Reihenfolge der Keyword-Listen bleibt unverändert (wichtig für die Zuordnung zur `T2F_modwordlist`).
 
 ## Test
@@ -66,6 +72,13 @@ Alternativ die Datei von Hand nach `FHEM/39_Talk2Fhem.pm` kopieren und `reload 3
 
 ## Bekannte Eigenheiten von upstream (nicht geändert)
 
-- Backslashes in `T2F_keywordlist` gehen beim Einlesen verloren (`Bad\S*` → `BadS*`,
-  `Terrasse(?!\sOst)` → `Terrasse(?!sOst)`).
-- Umlaut-Platzhalter landen im Filter (`T2F_places=.*T\S\S?r.*` für „Tür“).
+- `T2F_filter` verliert seine Backslashes weiterhin (`\bbitte\b` → `bbitteb`, greift also nie).
+  Bewusst nicht geändert: ein funktionierender Filter würde „bitte“ vor der Auswertung entfernen,
+  Antworten wie `$1{/bitte/=>Gern\,}` fielen dann weg.
+- In `{…}`/`[…]`-Modifikatoren (z. B. `$2{empty=>…, else=>$2@}`) gehen Backslashes eines
+  eingesetzten Listenworts verloren (`Terrasse\sOst` → `TerrassesOst`); Listenwörter mit einer
+  zweiten Schreibweise ohne Regex (`|Ostterrasse`) treffen trotzdem.
+- Umlaut-Platzhalter landen im Filter (`T2F_places=.*T\S\S?r.*` für „Tür“), wenn
+  `T2F_disableumlautescaping` nicht gesetzt ist.
+- Leerzeichen in Listenwörtern landen im `set`-Befehl und zerlegen ihn. Statt `Nachttisch Maike`
+  `Nachttisch.Maike` in die Liste schreiben (der Punkt trifft das Leerzeichen).

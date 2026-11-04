@@ -140,7 +140,7 @@ use Text::Balanced qw(extract_multiple extract_bracketed);
 my %Talk2Fhem_globals;
 
 
-$Talk2Fhem_globals{version}="0.5.3-ahlers2mi.1";
+$Talk2Fhem_globals{version}="0.5.3-ahlers2mi.2";
 
 $Talk2Fhem_globals{EN}{erase} = ['\bplease\b', '\balso\b', '^msgtext:'];
 $Talk2Fhem_globals{EN}{numbers} = {
@@ -1016,8 +1016,14 @@ my $list = (shift || AttrVal($hash->{NAME}, $type, ""));
 	delete $hash->{helper}{$type};
 	foreach (keys %$list) {
 #			$$list{$_} = Talk2Fhem_parseArray($$list{$_});			
-		$hash->{helper}{T2F_andwordlist}{$_} = Talk2Fhem_parseArray($$list{$_}) if /^\&/;
-		$hash->{helper}{$type}{s/^\&//r} = Talk2Fhem_parseArray($$list{$_});
+		# ahlers2mi 2026-11-04: quotewords() entfernt Backslashes ausserhalb von '...'
+		# ("Bad\S*" -> "BadS*", "Terrasse(?!\sOst)" -> "Terrasse(?!sOst)"). Dort verdoppelt
+		# bleiben sie erhalten; in einfachen Anfuehrungszeichen bleiben sie ohnehin stehen.
+		# $hash->{helper}{T2F_andwordlist}{$_} = Talk2Fhem_parseArray($$list{$_}) if /^\&/;
+		# $hash->{helper}{$type}{s/^\&//r} = Talk2Fhem_parseArray($$list{$_});
+		(my $lv = $$list{$_}) =~ s/('[^']*')|\\/defined($1) ? $1 : '\\\\'/ge;
+		$hash->{helper}{T2F_andwordlist}{$_} = Talk2Fhem_parseArray($lv) if /^\&/;
+		$hash->{helper}{$type}{s/^\&//r} = Talk2Fhem_parseArray($lv);
 	}
 	
 	
@@ -1111,7 +1117,10 @@ my @cmds = split(/ und (?!$Talk2Fhem_globals{DE}{numberre})/, $txt);
 my $art = '(([ai][nm]|beim?|auf|unter|hinter|über|vo[rnm]) )?((de[rmns]|die|das) )?';
 my $uart = '(eine?[smnr]?)';
 my @regtargets;
-for (keys %{$me->{helper}{T2F_andwordlist}}) { push(@regtargets, \@{$me->{helper}{T2F_andwordlist}{$_}}) };
+# ahlers2mi 2026-11-04: feste Reihenfolge - vorher zufaellige Hash-Reihenfolge, dadurch
+# konnte derselbe Satz je nach FHEM-Start unterschiedlich zerlegt werden
+# for (keys %{$me->{helper}{T2F_andwordlist}}) { push(@regtargets, \@{$me->{helper}{T2F_andwordlist}{$_}}) };
+for (sort keys %{$me->{helper}{T2F_andwordlist}}) { push(@regtargets, \@{$me->{helper}{T2F_andwordlist}{$_}}) };
 my $reg = '\b'.${art}.'('.join("|",map { @$_ } @regtargets).')\b';
 
 my @andlockinfo; #my @sets;

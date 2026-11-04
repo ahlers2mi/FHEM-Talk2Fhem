@@ -10,13 +10,14 @@ my $raw = do { local $/; open my $f, '<', $devjson or die $!; <$f> };
 $raw = substr($raw, index($raw, '{'));
 my $dev = JSON::PP->new->utf8(0)->decode($raw);
 my $name = 'talk';
-# Erwartet JSON mit {"def": "<DEF>", "attributes": {...}} (Format von get_device des FHEM-MCP)
 $attr{$name} = $dev->{attributes};
 sub Log3 { print STDERR "LOG$_[1]: $_[2]\n" if ($ENV{T2F_LOG}||0) >= $_[1]; }
 sub AttrVal { my ($d,$a,$def)=@_; $d = $d->{NAME} if ref $d; return exists $attr{$d}{$a} ? $attr{$d}{$a} : $def; }
 sub ReadingsVal { return $_[2] }
 sub IsDisabled { 0 } sub asyncOutput {} sub notifyRegexpChanged {}
 sub readingsSingleUpdate {} sub readingsBeginUpdate {} sub readingsBulkUpdate {} sub readingsEndUpdate {}
+# wie 99_Utils.pm
+sub IsInt { defined $_[0] && $_[0] =~ /^[+-]?\d+$/ }
 sub AnalyzeCommand { '' } sub AnalyzeCommandChain { '' } sub fhem { '' }
 # Hilfsfunktionen aus 99_myUtils, die in answer-Ausdruecken stehen
 sub T2F_answer { "<ANS:$_[0]>" } sub T2F_getInfo { "<INFO:$_[0]>" }
